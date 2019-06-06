@@ -1,0 +1,13 @@
+*.log
+*.err
+*.root
+*.out
+*.o
+make_random
+incorporate
+lowfit_sk4_gain_corr_mc
+vectgen
+*.qux
+seed/*
+spectrum_input/*
+card/*
