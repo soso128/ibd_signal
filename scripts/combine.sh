@@ -8,9 +8,9 @@ tag=r$run
 combine=$PWD/../incorporate
 
 # Inputs (vector files) and outputs
-indir=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/skdetsim/
+indir=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/skdetsim/jul17/
 infile=$indir/skdetsim.lowfit.$tag\.mcfit.root
-outdir=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/combined/
+outdir=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/combined/jul17/
 outfile=$outdir/combined.$tag.root
 rm -f $outfile
 
@@ -22,7 +22,8 @@ then
 fi
 
 # Combine events
-time $combine $outfile $infile $run
+echo "$combine $outfile $infile"
+time $combine $outfile $infile
 
 echo ' Check: '
 ls -haltr $outfile

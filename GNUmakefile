@@ -3,7 +3,8 @@
 #SKOFL_ROOT=/usr/local/sklib_g77/skofl_14b
 #SKOFL_ROOT = /usr/local/sklib_gcc4.8.2/skofl-trunk
 
-SKOFL_ROOT = /usr/local/sklib_gcc4.8.5/skofl-trunk
+SKOFL_ROOT = /home/elhedri/skofl/
+#SKOFL_ROOT = /usr/local/sklib_gcc4.8.5/skofl-trunk
 #SKOFL_ROOT = /home/sklowe/skofl/r25242/
 
 include $(SKOFL_ROOT)/config.gmk
@@ -17,13 +18,16 @@ LOCAL_LIBS	= -lsollib_4.0 -lsklowe_7.0 -lsollib_4.0 -lwtlib_5.1 -lbonsai_3.3 -ls
 #  Objects
 #
 
-OBJS   =  snrate vectgen make_random lowfit_sk4_gain_corr_mc incorporate
+OBJS   =  snrate vectgen make_random lowfit_sk4_gain_corr_mc incorporate read_runtimes count
 
 all: $(OBJS)
 	$(RM) *.o *~
 
 snrate: snrate.cpp
 	g++ -c snrate.cpp
+
+count: count.o
+	LD_RUN_PATH=$(SKOFL_LIBDIR):$(A_LIBDIR) $(CXX) $(CXXFLAGS) -o count count.o $(LDLIBS)
 
 vectgen: vectgen.o snrate.o
 	LD_RUN_PATH=$(SKOFL_LIBDIR):$(A_LIBDIR) $(CXX) $(CXXFLAGS) -o vectgen vectgen.o snrate.o $(LDLIBS) 

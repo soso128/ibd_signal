@@ -19,16 +19,20 @@ using namespace std;
 
 #include "tqrealroot.h"  // include HEADER information
 #include "loweroot.h"
+#include "mcinfo.h"
 #include "stdio.h" // check whether file exist
+#include "stdlib.h" 
 #include <iomanip> // set io
 #include "skroot.h"
+#include <algorithm>
 
 const Float_t mintime = 18000; //ns
 const Float_t maxtime = 535000;
 const Float_t deadtime = 900;
 const Int_t NEVENTGAP = 1500; //~2000 events per MC file, 2 MC/1 dummy, so 1500 is enough
 Int_t twind = 517000;
-Int_t NHITUP = 55000;
+Int_t tbeam = 500000;
+Int_t NHITUP = 65000;
 Int_t NHITLOW = 50000;
 Float_t CENTERT = 500000;
 
@@ -40,34 +44,68 @@ extern "C" {
 //
 int main(int argc, char **argv)
 {
-	if (argc != 5)
+	if (argc != 3)
 	{
-		cout << "Usage: " << argv[0] << " fname_out fname_in run_number" << endl;
+		cout << "Usage: " << argv[0] << " fname_out fname_in" << endl;
 		exit(1);
 	}
 
 	TString fname_out = argv[1];
 	TString fname_in = argv[2];
-	TString n = argv[3];
-	Int_t nfile = n.Atoi();
 	cout << "Input file: " << fname_in << endl;
 	cout << "Output file: " << fname_out << endl;
-	cout << "File number: " << n << endl;
-	Int_t filenumber = n.Atoi();
 
-	//start combine
-	cout << "Start of comb MC " << endl;
+        // Find run time bin and the corresponding T2K runs to use
+        // Info in a text file
+        FILE *fruns = fopen("/home/elhedri/SK2p2MeV/mc/generate/ibd_signal/run_info_t2k.txt", "r");
+        int timebin = -1;
+        map<int,int> runs;
+        int run, bin, dum;
+        int startbin = -1, oldbin = -1;
+        int count = 0;
+        // Fill run table and find time bin for current run
+        while(!feof(fruns)){
+            fscanf(fruns, "%d %d %d\n", &run, &bin, &dum);
+            if (bin != oldbin){
+                if (timebin != -1) break;
+                startbin = count;
+                oldbin = bin;
+            }
+            if (run == nfile){
+                timebin = bin;
+            }
+            pair<int,int> p(run,dum);
+            runs.insert(p);
+            count++;
+        }
+        // Remove everything not in the right time bin
+        // (for the first bin, nothing to remove)
+        // So at the end we have a hash table that, for a given run, tells us
+        // whether it is dummy or real bin
+        if (startbin > 0)
+            for(int q = 0; q < startbin; q++)
+                runs.erase(runs.begin());
+        fclose(fruns);
+        cout << "Time bin is " << timebin << endl;
+
+        // Load T2K data for the run period we want
 	TChain *t2kch = new TChain("data");
 	//dummy trigger chain
-        char inname[500];
-        sprintf(inname, "/disk02/usr6/elhedri/t2k/data/t2k.0%d.root", nfile);
-	t2kch->Add(inname);
-	NHITUP=60000;
-	NHITLOW=55000;
+        for(map<int,int>::iterator iter = runs.begin(); iter != runs.end(); iter++){
+            int irun = iter->first;
+            char inname[500];
+            for (int k=0; k < 9; k++){
+                sprintf(inname, "/disk01/usr5/rakutsu/t2k/Neutron/work/dummy/out/inbtwRun%d_%d/t2k.0%d*.root", k, k+1, irun);
+                t2kch->Add(inname);
+            }
+        }
+        int nt2k = t2kch->GetEntries();
+        cout << nt2k << " t2k entries available for run " << nfile << " in bin " << timebin << endl;
 	cout << "Processing run " << n << endl;
-//	t2kch->Add("/disk01/lowe5/zhangyang/2p2/t2k/*.root");
-	//t2kch->Add("/disk/lowe5/zhangyang/2p2/t2k/t2k.069700.root");
-	//t2kch->Add("/disk/lowe5/zhangyang/2p2/t2k_old_data/*.root");
+        if (t2kch->GetEntries() == 0){
+            cout << "no T2K data for time period " << timebin << endl;
+            exit(42);
+        }
 
 	TQReal *TQI = new TQReal;
 	TQReal *TQA = new TQReal;
@@ -76,13 +114,11 @@ int main(int argc, char **argv)
 	t2kch->SetBranchAddress("TQREAL", &TQI);
 	t2kch->SetBranchAddress("TQAREAL", &TQA);
 	t2kch->SetBranchAddress("HEADER", &HEADER);
+
 	// Input file
 	//
-	//nread is for MC
-
 	Float_t toffset;
-	Int_t nread=0;
-	Int_t entry=nfile*NEVENTGAP; // 2 MC event ~ 1 dummy trigger event
+	Int_t entry; // 2 MC event ~ 1 dummy trigger event
 	cout << "Combining MC..." << endl;
 	//open input sample file (with reconstructions/after skdetsim, etc)
 	//
@@ -123,13 +159,10 @@ int main(int argc, char **argv)
         int *is_signal = new int[100000];
 	treeOut->Branch("issignal",  &is_signal, "issignal[100000]/I");
 	treeOut->Branch("HEADER",  "Header", &lomu_head, bufsize, 0);
-	//        treeOut->Branch("TQREAL",  "TQReal", &lomu_tqi,  bufsize, 0);
-	//        treeOut->Branch("TQAREAL", "TQReal", &lomu_tqa,  bufsize, 0);
 	treeOut->Branch("TQREAL",  "TQReal", &TQII,  bufsize, 0);
 	treeOut->Branch("TQAREAL", "TQReal", &TQAA,  bufsize, 0);
 	treeOut->Branch("LOWE", "LoweInfo", &lomu_lowe,  bufsize, 0);
 	treeOut->Branch("MC", "MCInfo", &lomu_mc,  bufsize, 0);
-	//open previously created event list of input sample events
 
 	// Initialize for root 
 	initialize_();
@@ -148,59 +181,38 @@ int main(int argc, char **argv)
 	cout << "Reading event loop: " << endl;
 	//loop over events
 	Int_t nentries = treeIn->GetEntries();
-        int nsep = 2;
 	cout << "Get 2p2 candidate entries " <<  treeIn->GetEntries() << endl;
 	for (Int_t I2P2=0; I2P2<nentries; I2P2 ++) {
             cout << "Event " << I2P2 << endl;
-//	for (Int_t I2P2=0; I2P2<100; I2P2 ++) {
-		//                if (I2P2%2001 == 0)  continue;  //exclude overlapping events
-//		cout<<I2P2<<endl;
 		treeIn->GetEntry(I2P2);
-		//1 dummy trigger events with  2 MC event, hence nread%2 conditional
-		//nread is for MC
-		if(nread%nsep == 0) 
-		{
-			//read dummy trigger
-			t2kch->GetEntry(entry);
-			entry++;
-			//a goog dummy events should have nhits in 50000~55000
-			while (TQI->nhits > NHITUP || TQI->nhits < NHITLOW)
-			{
-				t2kch->GetEntry(entry);
-				entry++;
-			}
-		}
-//		cout<<I2P2<<" "<<entry<<" "<<nread<<endl;
-		if (nread%1000 == 0) cout << "Read " << nread << " events. " << endl;
+                // Pick a T2K event at random
+                int is_dummy, t2krun;
+                do{
+                    int entry = (int) (random()/((double) RAND_MAX) * nt2k);
+                    //read t2k
+                    t2kch->GetEntry(entry);
+                    t2krun = HEADER->nrunsk;
+                    is_dummy = runs[t2krun];
+                } while (is_dummy && (TQI->nhits > NHITUP || TQI->nhits < NHITLOW));
 		//dummy trigger timing goes from -500us < t < 500us 
 		//get the time offset at the beginnig of time window and 
 		//the center of the time window 
-		if (nread%nsep ==0)
-		{
-			//Linyan
-//			toffset = TQI->T[1000]; //shift to 1000th hit
-			toffset = TQI->T[0]; //shift to 1000th hit
-		}
-		else if (nread % nsep == 1)
-		{
-			//Linyan
-//			toffset = TQI->T[TQI->nhits-1] - CENTERT; // set toffset to center.
-			toffset = TQI->T[TQI->nhits-1] - twind ; // set toffset to center.
-			//cout << "*************TOFFSET********************************** " << toffset << endl;
-		}
-		//Linyan
-		//nread++;
-		//Temporary TQ information to save output TQ 
-		//Int_t nqiskz, nhitaz, nqisk_raw, nhitaz_raw;
-		//nqiskz = sktqz_.nqiskz;
-		//nhitaz = sktqaz_.nhitaz;
+                if (is_dummy < 0){
+                    cout << "Error: there should not have been t2k data for run " << t2krun << endl;
+                    is_dummy = 1; // temporary fix since we use only Akutsu-san's data for now
+                }
+                // If dummy event, we can take either the first or the second half of the event
+                // For a real beam event we always have to take the first 500 microseconds
+                int noffset = is_dummy ? (int) (random()/((double) RAND_MAX) * 2) : 0;
+		if (noffset == 0)
+			toffset = TQI->T[0];
+		else
+			toffset = TQI->T[TQI->nhits-1] - twind ;
 
+                // Save info from SKDetSim IBD event
 		for (Int_t i = 0; i < lomu_tqi->nhits; i++)
 		{
-			//ihtiflz[nqiskz_save] = 2*(Int_t)TMath::Power(2,16); //left shift 16 bit
-			//cable hit flag, default 
 			ihtiflz[nqiskz_save] = 2*(Int_t)TMath::Power(2,0); //left shift 16 bit
-			//lower 16 bit for calbe, and higher 16 bit for flag
 			icabiz[nqiskz_save] = lomu_tqi->cables[i]&0x0000FFFF;
 			tiskz[nqiskz_save] = lomu_tqi->T[i];
 			qiskz[nqiskz_save] = lomu_tqi->Q[i];
@@ -212,16 +224,32 @@ int main(int argc, char **argv)
                 {
                         //twind is how much of the dummy trigger banks we copy.
                         //offset is how much the first hit that we will copy is offset from 0.
-                        if (TQI->T[i] >= toffset && TQI->T[i] <= toffset + twind)
+                        float tmax = is_dummy ? toffset + twind : tbeam;
+                        if (TQI->T[i] >= toffset && TQI->T[i] <= tmax)
                         {
                                 tiskz[nqiskz_save] = TQI->T[i]-toffset +mintime;
                                 qiskz[nqiskz_save] = TQI->Q[i];
                                 icabiz[nqiskz_save] = TQI->cables[i]&0x0000FFFF;
                                 //had problems if I just directly copy ihtiflz, so just set every 
                                 //hit to the same default value.
-                                //ihtiflz[nqiskz_save] = 2*(Int_t)TMath::Power(2,16);
                                 ihtiflz[nqiskz_save] = 2*(Int_t)TMath::Power(2,0);
                                 nqiskz_save++;
+                        }
+                        // For T2K beam event, we need extra events (time window > 500 microseconds)
+                        // We take them from the event afterwards (or from the event before if current event is the last one of the batch)
+                        if( !is_dummy ){
+                            int extra_event = entry < nt2k - 1 ? entry + 1 : entry - 1;
+                            t2kch->GetEntry(extra_event);
+                            if (TQI->T[i] <= toffset + twind - tbeam)
+                            {
+                                    tiskz[nqiskz_save] = TQI->T[i]-TQI->T[0] + tbeam;
+                                    qiskz[nqiskz_save] = TQI->Q[i];
+                                    icabiz[nqiskz_save] = TQI->cables[i]&0x0000FFFF;
+                                    //had problems if I just directly copy ihtiflz, so just set every 
+                                    //hit to the same default value.
+                                    ihtiflz[nqiskz_save] = 2*(Int_t)TMath::Power(2,0);
+                                    nqiskz_save++;
+                            }
                         }
                 }
                 //there are some neutron hits saved which are out 
@@ -234,7 +262,6 @@ int main(int argc, char **argv)
                         icabiz2[i] = icabiz[i];
                 }
                 TMath::Sort(nqiskz_save, tiskz2, index, kFALSE); //increasing order
-                //TMath::Sort(nhitaz_save, taskz2, indexa, kFALSE);
                 for(int i=0;i<nqiskz_save;i++){
                         tiskz[i] = tiskz2[index[i]];
                         qiskz[i] = qiskz2[index[i]];
@@ -243,14 +270,11 @@ int main(int argc, char **argv)
                             is_signal[i] = 1;
                         else
                             is_signal[i] = 0;
-                        //cout << "tiskz " << tiskz[i] << endl;
                 }
-                //cout << "***********************normal*********************************" << endl;
                 //If a hit is okay, save it in sktqz_ timing bank
                 // Set TQI 
                 TQII->Clear();
                 Int_t newnqiskz = 0;
-                //cout << "***********************newnqiskz*************** " << newnqiskz  << endl;
                 for (Int_t i = 0; i < MAXPM; i++)
                 {
                         prevt[i] = -9999999;
@@ -273,15 +297,12 @@ int main(int argc, char **argv)
                 // LOWE & MU are just copied from lomu_lowe & lomu_mu
                 treeOut->Fill();	
                 nqiskz_save = 0, nhitaz_save = 0;
-		nread++;
-                //if (nread==10000) break;
 	}
 	// Close root
 	// Save output file
 	fileIn->Close();
 	fileOut->Write();
 	fileOut->Close();
-	cout << "Combining finished. Read " << nread << " events. " << endl;
 
 	// delete
 	delete lomu_head;
