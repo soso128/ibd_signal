@@ -9,10 +9,10 @@ SKDETSIM=/home/elhedri/skdetsim/skdetsim
 lowfit=$PWD/../lowfit_sk4_gain_corr_mc
 
 # Inputs (vector files) and outputs
-dirv=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/vector/
+dirv=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/vector/jul17/
 infile=$dirv/vect.$tag.zbs
-outdir=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/skdetsim/
-outdir2=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/lowfit/
+outdir=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/skdetsim/jul17/
+outdir2=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/lowfit/jul17/
 outfile=$outdir/skdetsim.$tag.root
 outfile2=$outdir/skdetsim.lowfit.$tag
 rm -f $outfile

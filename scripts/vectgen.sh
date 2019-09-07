@@ -11,7 +11,7 @@ then
 fi
 
 date
-outfile=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/vector/vect.r$run\.zbs
+outfile=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/vector/jul17/vect.r$run\.zbs
 cd ..
 echo "./vectgen "$run" "seed/r$run" "$outfile" "$file
 ./vectgen $run seed/r$run $outfile $file
