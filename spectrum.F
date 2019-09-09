@@ -1,6 +1,6 @@
 **********************************************************************
 *     ----------------------------------------
-      SUBROUTINE spectrum(iflag,idate,itime,pos,seed,specparamfile)
+      SUBROUTINE spectrum(iflag,idate,itime,pos,seed,emin, emax)
 *     ----------------------------------------
 *     
 *     ( purpose )
@@ -13,7 +13,7 @@
 *       itime    : run time
 *       pos      : vertex position
 *       seed     : random seed for spectrum generation
-*       specparamfile: input file for spectral parameters
+*       emin, emax: energy bin in which to generate events
 *
 *     ( output ) 
 *       COMMON VCWORK,VCVRTX
@@ -30,40 +30,42 @@
       real pos(3,10),postmp(3)
       real*8 ep, enu, eneutron, mneutron, mproton
       integer*4 seed
-      integer idate(3),itime(3),neutron,ip(2)
-      real dirtmp(3), dir(3,2), pmass,pmomabs(2),pmom(3,10)
-      real dwall,tvtx(2)
+      integer idate(3),itime(3),neutron,ip(3)
+      real dirtmp(3), dir(3,3), pmass,pmomabs(3),pmom(3,10)
+      real dwall,tvtx(3)
       character*200 specparamfile
 
       call kzeclr
 
-      nvct=2
+      nvct=3
       dwall=200.0
       mproton=938.272
       mneutron=939.5654
 
-      ip(1)= -11
-      ip(2)= 2112
+      ip(1)= -12
+      ip(2)= -11
+      ip(3)= 2112
       call rnpos(postmp,dwall)
-      do j = 1,2
+      do j = 1,3
           pos(1,j)=postmp(1)
           pos(2,j)=postmp(2)
           pos(3,j)=postmp(3)
-          tvtx(1)=0.0
-          call rndir(dirtmp)
-          dir(1,j)=dirtmp(1)
-          dir(2,j)=dirtmp(2)
-          dir(3,j)=dirtmp(3)
+          tvtx(j)=0.0
       enddo
-      call srnspectrum(ep, enu, seed, specparamfile)
-      pmomabs(1)=sqrt(ep*ep-0.511*0.511)
+      call rndir(dirtmp)
+      dir(1,1)=dirtmp(1)
+      dir(2,1)=dirtmp(2)
+      dir(3,1)=dirtmp(3)
+c     Use Strumia-Vissani cross-section to get positron direction
+c     and deduce the one for the neutron
+      ep = emin 
+      pmomabs(2)=sqrt(ep*ep-0.511*0.511)
       eneutron = enu + mproton - ep
-      pmomabs(2)=sqrt(eneutron * eneutron - mneutron * mneutron)
-
-      do j=1,3
-        do k= 1,2
-          pmom(j,k)=dir(j,k)*pmomabs(k)
-        enddo
+      pmomabs(3)=sqrt(eneutron * eneutron - mneutron * mneutron)
+      do j = 1,3
+          pmom(j,1) = dir(j,1) * pmomabs(1);
+          pmom(j,2) = dir(j,2) * pmomabs(2)
+          pmom(j,3) = pmom(j,1) - pmom(j,2)
       enddo
 
       write(*,*) '**************************'
