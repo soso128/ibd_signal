@@ -28,8 +28,8 @@
       INTEGER iwrite,lfbadrun
       INTEGER ibad_subrun(61525:77958,3000)  !2657days
       integer idate_prev(3), itime_prev(3)
-      REAL tweight,sdir(3),POS(3,10), emin, emax
-      character*200 timefile, fname
+      REAL tweight,sdir(3),POS(3,10)
+      character*200 timefile, fname,fnamespec
       integer iargc,istart,iend
       character*80 arg, fseed
       logical*4 ex
@@ -37,7 +37,7 @@
       integer*4 seed
       integer irnsk4, lrnsk4   !Added by P. Weatherly
       integer num,neutron
-      parameter(num = 5)
+      parameter(num = 10)
 
       integer lenchr
 
@@ -47,41 +47,6 @@ Cpi   SET the initial run for SK-IV and the Last Run for the most recent update
       timefile=
      $'/home/sklowe/realtime_sk4_rep/solar_apr19/timevent/timevent.r061525.r077958'
 
-      if(iargc().lt.3)then
-         write(6,*)
-     &    'Usage: vectgen run# random_seed_file ZBS_file emin emax'
-         stop
-      endif
-
-      call getarg(1,arg)
-      read(arg,*) istart
-      call getarg(2,fseed) ! in/out seed file
-      call getarg(3,fname) ! output ZBS file name
-
-c***  Get emin and emax 
-      call getarg(4,arg)
-      read(arg,*) emin
-      call getarg(5,arg)
-      read(arg,*) emax
-
-
-c*** open random seed file, if exist
-      inquire(file=fseed, exist=ex)
-      if (ex) then
-c***  set luxury level 3
-         open(11, file=fseed,status='old',form='formatted')
-         read(11,*) i1
-         close(11)
-         call rluxgo(3,i1,0,0)
-         cnt = 0
-
-      else
-         write(6,*) 'Please set Random seed'
-         stop
-
-      endif
-
-      CALL KZINIT
       SK_GEOMETRY = 4
 
 
@@ -102,17 +67,6 @@ c*** open time event file
 
       print*,'timefile opened'
 
-ccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      call set_rflist(21,fname,'LOCAL',' ','WRT',' ',' ',
-     &     'recl=5670 status=unknown',' ',' ')
-      print *, 'open as LOCAL: ', fname(1:lenchr(fname))
-ccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-c Open vector output ZBS file
-      print*,'Trying SKOPENF(21,1,Z,IERR)'
-      CALL SKOPENF(21,1,'Z',IERR)
-
-      print*,'Start Read '
 
  10   continue
 **** read run number, subrun number, date(yy,mm,dd), time(hh,mm,ss), run time(sec), solar direction(direction cosine toward(?) sun), istat
@@ -173,26 +127,7 @@ c                  print *, "Bad subrun!"
          endif
 
          if(istat.ne.0) goto 100	! 0 : OK, -1 : EOF
-         if(nrun.lt.istart) goto 10
-         if(nrun.gt.istart) goto 100
-         ievent = ievent + 1
-         if(mod(ievent,10000).eq.0) print*,ievent,' is finish'
-
-c*** make vector ("num" times per minute)
-         DO I=1,num
-cccccccccccccccccccccccccccccccccccccccccccccccc
-            seed=cnt + i1
-            cnt = cnt + 1
-            CALL spectrum(9,IDATE,ITIME,pos, seed,emin, emax)
-*     BAHCALL & PINSONNEAULT 2004 (total tmpflux, b8=5.79)
-*     Winter et al PRC 73,025503 (2006) (tmpb8 spectrum)
-*     BAHCALL @NEUTRIO98 (hep spectrum)
-cccccccccccccccccccccccccccccccccccccccccccccccc
-            call slmcmklow(nrun,nsub,idate,itime,tweight)
-            iwrite = iwrite+1
-            CALL KZWRIT(21)
-            CALL KZECLR
-         enddo
+         print *, nrun, nsub, idate, itime, tweight
       goto 10
 
  100  continue
@@ -204,8 +139,3 @@ cccccccccccccccccccccccccccccccccccccccccccccccc
 
       STOP
       END
-
-
-
-
-#include "spectrum.F"

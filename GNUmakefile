@@ -18,19 +18,16 @@ LOCAL_LIBS	= -lsollib_4.0 -lsklowe_7.0 -lsollib_4.0 -lwtlib_5.1 -lbonsai_3.3 -ls
 #  Objects
 #
 
-OBJS   =  snrate vectgen make_random lowfit_sk4_gain_corr_mc incorporate read_runtimes count
+OBJS   =  dsigma vectgen make_random lowfit_sk4_gain_corr_mc incorporate
 
 all: $(OBJS)
 	$(RM) *.o *~
 
-snrate: snrate.cpp
-	g++ -c snrate.cpp
+dsigma: dsigma.cpp
+	g++ -c dsigma.cpp
 
-count: count.o
-	LD_RUN_PATH=$(SKOFL_LIBDIR):$(A_LIBDIR) $(CXX) $(CXXFLAGS) -o count count.o $(LDLIBS)
-
-vectgen: vectgen.o snrate.o
-	LD_RUN_PATH=$(SKOFL_LIBDIR):$(A_LIBDIR) $(CXX) $(CXXFLAGS) -o vectgen vectgen.o snrate.o $(LDLIBS) 
+vectgen: vectgen.o dsigma.o
+	LD_RUN_PATH=$(SKOFL_LIBDIR):$(A_LIBDIR) $(CXX) $(CXXFLAGS) -o vectgen vectgen.o dsigma.o $(LDLIBS) 
 
 incorporate: initialize.o incorporate.o
 	LD_RUN_PATH=$(SKOFL_LIBDIR):$(A_LIBDIR) $(CXX) $(CXXFLAGS) -o incorporate incorporate.o initialize.o $(LDLIBS) 

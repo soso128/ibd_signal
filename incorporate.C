@@ -46,14 +46,17 @@ int main(int argc, char **argv)
 {
 	if (argc != 3)
 	{
-		cout << "Usage: " << argv[0] << " fname_out fname_in" << endl;
+		cout << "Usage: " << argv[0] << " fname_out fname_in nrun" << endl;
 		exit(1);
 	}
 
 	TString fname_out = argv[1];
 	TString fname_in = argv[2];
+	TString nrun_char = argv[3];
+        int nfile = nrun_char.Atoi();
 	cout << "Input file: " << fname_in << endl;
 	cout << "Output file: " << fname_out << endl;
+	cout << "Run number: " << nfile << endl;
 
         // Find run time bin and the corresponding T2K runs to use
         // Info in a text file
@@ -101,7 +104,7 @@ int main(int argc, char **argv)
         }
         int nt2k = t2kch->GetEntries();
         cout << nt2k << " t2k entries available for run " << nfile << " in bin " << timebin << endl;
-	cout << "Processing run " << n << endl;
+	//cout << "Processing run " << n << endl;
         if (t2kch->GetEntries() == 0){
             cout << "no T2K data for time period " << timebin << endl;
             exit(42);

@@ -28,7 +28,8 @@
 #include "vcvrtx.h"
 
       real pos(3,10),postmp(3)
-      real*8 ep, enu, eneutron, mneutron, mproton
+      real ep, enu, eneutron, mneutron, mproton
+      real dirpx, dirpy, dirpz
       integer*4 seed
       integer idate(3),itime(3),neutron,ip(3)
       real dirtmp(3), dir(3,3), pmass,pmomabs(3),pmom(3,10)
@@ -58,7 +59,8 @@
       dir(3,1)=dirtmp(3)
 c     Use Strumia-Vissani cross-section to get positron direction
 c     and deduce the one for the neutron
-      ep = emin 
+      getspec(emin, emax,dir(1,1),dir(2,1),dir(3,1),ep,enu,dirpx,dirpy,dirpz)
+      pmomabs(1)=enu
       pmomabs(2)=sqrt(ep*ep-0.511*0.511)
       eneutron = enu + mproton - ep
       pmomabs(3)=sqrt(eneutron * eneutron - mneutron * mneutron)
@@ -70,9 +72,10 @@ c     and deduce the one for the neutron
 
       write(*,*) '**************************'
       write(*,*) 'EV, Vertex::',i,pos(1,1),pos(2,1),pos(3,1)
-      write(*,*) '1st positron::',pmomabs(1),dir(1,1),dir(2,1),dir(3,1)
-      write(*,*) '1st neutron::',pmomabs(2),dir(1,2),dir(2,2),dir(3,2)
-      write(30,*) pos(1,1), pos(2,1), pos(3,1)
+      write(*,*) '1st neutrino::',pmomabs(1),dir(1,1),dir(2,1),dir(3,1)
+      write(*,*) '1st positron::',pmomabs(2),dir(1,2),dir(2,2),dir(3,2)
+      write(*,*) '1st neutron::',pmomabs(3),dir(1,3),dir(2,3),dir(3,3)
+      write(30,*) pos(1,2), pos(2,2), pos(3,2)
 
 
       call VCMPMK(NVCT,POS,PMOM,TVTX,IP)
