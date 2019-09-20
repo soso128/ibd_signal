@@ -1,20 +1,23 @@
 #!/bin/bash
 
 # Parse job name to get command line arguments
-run=`echo $PJM_JOBNAME | cut -c2-`
+args=(${PJM_JOBNAME//_/ })
+run=`echo ${args[0]} | cut -c2-`
 tag=r$run
+emin=${args[1]}
+emax=${args[2]}
 
-# Executables
-SKDETSIM=/home/elhedri/skdetsim/skdetsim
-lowfit=$PWD/../lowfit_sk4_gain_corr_mc
+source exec_card.sh
 
 # Inputs (vector files) and outputs
-dirv=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/vector/jul17/
-infile=$dirv/vect.$tag.zbs
-outdir=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/skdetsim/jul17/
-outdir2=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/lowfit/jul17/
-outfile=$outdir/skdetsim.$tag.root
-outfile2=$outdir/skdetsim.lowfit.$tag
+inname=$vector_dir/$emin\_$emax
+infile=$inname/$vector_prefix\.$tag.zbs
+outname=$skdetsim_dir/$emin\_$emax
+mkdir -p $outname
+outfile=$outname/$skdetsim_prefix\.$tag.root
+outname2=$lowfit_dir/$emin\_$emax
+mkdir -p $outname2
+outfile2=$outname2/$lowfit_prefix.$tag
 rm -f $outfile
 touch $outfile
 
@@ -31,7 +34,8 @@ fi
 RAN1=`sh -c 'RANDOM=$0; echo $RANDOM' $1`
 RAN2=`sh -c 'RANDOM=$0; echo $RANDOM' $2`
 
-CARD=../card/supersim.card.$tag
+mkdir -p $card_dir
+CARD=$card_dir/supersim.card.$PJM_JOBNAME
 if [ -f $CARD  ]
 then
     rm $CARD

@@ -37,7 +37,7 @@
       integer*4 seed
       integer irnsk4, lrnsk4   !Added by P. Weatherly
       integer num,neutron
-      parameter(num = 5)
+      parameter(num = 10)
 
       integer lenchr
 

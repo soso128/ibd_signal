@@ -1,12 +1,20 @@
 #!/bin/bash
 
+source exec_card.sh
+
+# Create log and error dirs
+logdir=$lowfit_dir/log
+errdir=$lowfit_dir/err
+mkdir -p  $logdir
+mkdir -p $errdir
+
 # Parse command line arguments
 while getopts ":dh" opt
 do
     case $opt in
         h)
             echo '****************     help for qsub_skdetsim.sh    ****************:'
-            echo 'Usage ./qsub_skdetsim <start run> <end run>'
+            echo 'Usage ./qsub_skdetsim <start run> <end run> <emin> <emax>'
             ;;
     esac
 done
@@ -21,6 +29,6 @@ do
     then
         break
     fi
-    jobname=$run
-    qsub -q lowe -o log/$jobname.out -e err/$jobname.err -r $jobname ./skdetsim.sh
+    jobname=$run\_$3\_$4
+    qsub -q $queue -o $logdir/$jobname.out -e $logdir/$jobname.err -r $jobname ./skdetsim.sh
 done < ../runs.txt

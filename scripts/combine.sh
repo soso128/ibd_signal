@@ -1,17 +1,20 @@
 #!/bin/bash
 
-# Parse job name to get command line arguments
-run=`echo $PJM_JOBNAME | cut -c2-`
-tag=r$run
+source exec_card.sh
 
-# Executables
-combine=$PWD/../incorporate
+# Parse job name to get command line arguments
+args=(${PJM_JOBNAME//_/ })
+run=`echo ${args[0]} | cut -c2-`
+tag=r$run
+emin=${args[1]}
+emax=${args[2]}
 
 # Inputs (vector files) and outputs
-indir=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/skdetsim/jul17/
-infile=$indir/skdetsim.lowfit.$tag\.mcfit.root
-outdir=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/combined/jul17/
-outfile=$outdir/combined.$tag.root
+inname=$lowfit_dir/$emin\_$emax
+infile=$inname/$lowfit_prefix\.$tag\.mcfit.root
+outname=$combine_dir/$emin\_$emax
+mkdir -p $outname
+outfile=$outname/$combine_prefix\.$tag.root
 rm -f $outfile
 
 # Check if input file exists
@@ -22,8 +25,8 @@ then
 fi
 
 # Combine events
-echo "$combine $outfile $infile"
-time $combine $outfile $infile
+echo "$combine $outfile $infile $run"
+time $combine $outfile $infile $run
 
 echo ' Check: '
 ls -haltr $outfile

@@ -42,6 +42,7 @@
       dwall=200.0
       mproton=938.272
       mneutron=939.5654
+      me = 0.511
 
       ip(1)= -12
       ip(2)= -11
@@ -59,15 +60,16 @@
       dir(3,1)=dirtmp(3)
 c     Use Strumia-Vissani cross-section to get positron direction
 c     and deduce the one for the neutron
-      getspec(emin, emax,dir(1,1),dir(2,1),dir(3,1),ep,enu,dirpx,dirpy,dirpz)
+      call getspec(emin, emax,dir(1,1),dir(2,1),dir(3,1),ep,enu,dir(1,2),dir(2,2),dir(3,2))
       pmomabs(1)=enu
-      pmomabs(2)=sqrt(ep*ep-0.511*0.511)
+      pmomabs(2)=sqrt(ep*ep-me*me)
       eneutron = enu + mproton - ep
       pmomabs(3)=sqrt(eneutron * eneutron - mneutron * mneutron)
       do j = 1,3
           pmom(j,1) = dir(j,1) * pmomabs(1);
           pmom(j,2) = dir(j,2) * pmomabs(2)
           pmom(j,3) = pmom(j,1) - pmom(j,2)
+          dir(j,3) = pmom(j,3)/pmomabs(3);
       enddo
 
       write(*,*) '**************************'

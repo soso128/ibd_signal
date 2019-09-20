@@ -2,18 +2,17 @@
 
 args=(${PJM_JOBNAME//_/ })
 run=`echo ${args[0]} | cut -c2-`
-file=""
-if [ ${#args[@]} -eq 2 ]
-then
-    file=${args[1]}
-    file=spectrum_input/$file
-    echo $file
-fi
+emin=${args[1]}
+emax=${args[2]}
+
+source exec_card.sh
 
 date
-outfile=/disk02/usr6/elhedri/SK2p2MeV/signal/srn/vector/jul17/vect.r$run\.zbs
+outname=$vector_dir/$emin\_$emax
+mkdir -p $outname
+outfile=$outname/$vector_prefix\.r$run\.zbs
 cd ..
-echo "./vectgen "$run" "seed/r$run" "$outfile" "$file
-./vectgen $run seed/r$run $outfile $file
+echo "./vectgen "$run" "seed/r$run" "$outfile" "$emin" "$emax
+$vector $run $seed_dir/$emin\_$emax/r$run $outfile $emin $emax
 cd scripts/
 date

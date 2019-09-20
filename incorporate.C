@@ -44,7 +44,7 @@ extern "C" {
 //
 int main(int argc, char **argv)
 {
-	if (argc != 3)
+	if (argc != 4)
 	{
 		cout << "Usage: " << argv[0] << " fname_out fname_in nrun" << endl;
 		exit(1);
@@ -159,8 +159,8 @@ int main(int argc, char **argv)
 	TQReal *TQII = new TQReal; // TQ (in-gate)
 	TQReal *TQAA = new TQReal; // Anti-TQ (in-gate)
 	MCInfo *MC = new MCInfo;
-        int *is_signal = new int[100000];
-	treeOut->Branch("issignal",  &is_signal, "issignal[100000]/I");
+        Int_t is_signal[100000];
+	treeOut->Branch("issignal",  is_signal, "issignal[100000]/I");
 	treeOut->Branch("HEADER",  "Header", &lomu_head, bufsize, 0);
 	treeOut->Branch("TQREAL",  "TQReal", &TQII,  bufsize, 0);
 	treeOut->Branch("TQAREAL", "TQReal", &TQAA,  bufsize, 0);
@@ -240,20 +240,23 @@ int main(int argc, char **argv)
                         }
                         // For T2K beam event, we need extra events (time window > 500 microseconds)
                         // We take them from the event afterwards (or from the event before if current event is the last one of the batch)
-                        if( !is_dummy ){
-                            int extra_event = entry < nt2k - 1 ? entry + 1 : entry - 1;
-                            t2kch->GetEntry(extra_event);
-                            if (TQI->T[i] <= toffset + twind - tbeam)
-                            {
-                                    tiskz[nqiskz_save] = TQI->T[i]-TQI->T[0] + tbeam;
-                                    qiskz[nqiskz_save] = TQI->Q[i];
-                                    icabiz[nqiskz_save] = TQI->cables[i]&0x0000FFFF;
-                                    //had problems if I just directly copy ihtiflz, so just set every 
-                                    //hit to the same default value.
-                                    ihtiflz[nqiskz_save] = 2*(Int_t)TMath::Power(2,0);
-                                    nqiskz_save++;
-                            }
+                }
+                if( !is_dummy ){
+                    int extra_event = entry < nt2k - 1 ? entry + 1 : entry - 1;
+                    t2kch->GetEntry(extra_event);
+                    for (Int_t i = 0; i < TQI->nhits; i ++){
+                        if (TQI->T[i] <= TQI->T[0] + twind - tbeam + toffset)
+                        {
+                                tiskz[nqiskz_save] = TQI->T[i]-TQI->T[0]  - toffset + tbeam + mintime;
+                                qiskz[nqiskz_save] = TQI->Q[i];
+                                icabiz[nqiskz_save] = TQI->cables[i]&0x0000FFFF;
+                                //had problems if I just directly copy ihtiflz, so just set every 
+                                //hit to the same default value.
+                                ihtiflz[nqiskz_save] = 2*(Int_t)TMath::Power(2,0);
+                                nqiskz_save++;
                         }
+                        else break;
+                    }
                 }
                 //there are some neutron hits saved which are out 
                 //of order from the rest of the dummy trigger hits. I sort to fix it.

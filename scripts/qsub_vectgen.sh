@@ -1,18 +1,28 @@
 #!/bin/bash
 
+source exec_card.sh
+
+# Create log and error dirs
+logdir=$vector_dir/log
+errdir=$vector_dir/err
+mkdir -p  $logdir
+mkdir -p $errdir
+
 runfile=runs_darkrate.txt
 
 debug=0
-spec=0
+emin=-1
+emax=-1
 
 # Parse command line arguments
-while getopts ":ds:hf:l:" opt
+while getopts ":dhf:l:e:E:" opt
 do
     case ${opt} in
-        s)
-            spec=1
-            file=$OPTARG
-            echo "Spectral file is "$file
+        e)
+            emin=$OPTARG
+            ;;
+        E)
+            emax=$OPTARG
             ;;
         f)
             frun=$OPTARG
@@ -22,7 +32,7 @@ do
             ;;
         h)
             echo '****************     help for qsub_vectgen.sh    ****************:'
-            echo 'Usage: ./qsub_vectgen.sh <start run> <end run> -s [file for spectral parameters]'
+            echo 'Usage: ./qsub_vectgen.sh <start run> <end run> <emin> <emax>'
             exit 0
             ;;
     esac
@@ -39,20 +49,16 @@ do
     then
         break
     fi
-    if [ "$spec" -eq 0 ]
-    then
-        jobname=$run
-    else
-        jobname=$run\_$file
-        echo $jobname
-    fi
-    seed=../seed/r$run
+    jobname=$run\_$emin\_$emax
+    echo $jobname
+    mkdir -p $seed_dir/$emin\_$emax
+    seed=$seed_dir/$emin\_$emax/r$run
     echo $seed
     if [ -f $seed ]
     then
         rm -f $seed
     fi
     ../make_random $seed
-    echo qsub -x -q lowe -o log/$run.vect.out -e err/$run.vect.err -r $jobname ./vectgen.sh
-    qsub -x -q lowe -o log/$run.vect.out -e err/$run.vect.err -r $jobname ./vectgen.sh
+    echo qsub -x -q lowe -o $logdir/$run.vect.out -e $errdir/$run.vect.err -r $jobname ./vectgen.sh
+    qsub -x -q $queue -o $logdir/$run.vect.out -e $errdir/$run.vect.err -r $jobname ./vectgen.sh
 done < ../runs.txt
