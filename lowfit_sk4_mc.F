@@ -1,8 +1,8 @@
 c
-c     lowfit_sk4_gain_corr.F         13-APR-2017     Y.Takeuchi
+c     lowfit_sk4.F         13-APR-2017     Y.Takeuchi
 c
-c     for SK-IV process apply lowe fitters with gain correction
-c
+c     for SK-IV process apply lowe fitters
+
 c   output: (arg1)   skroot file 
 c   input:  (arg2-)  skroot reformat files 
 c
@@ -120,7 +120,7 @@ c*** init.
 
 c***  init water transparency table
       call skrunday 
-      call skwt_gain_corr 
+      call skwt
 
 c***  set run number 
 c      call skbadch(nrun, 1, iret)
@@ -138,7 +138,7 @@ c*** suppress outputs from skbadch
       log_level_skbadch = 4
 c*** suppress outputs from skdark
 cc      log_level_skdark = 4
-c*** suppress outputs from lfallfit_sk4_gain_corr
+c*** suppress outputs from lfallfit_sk4
 cc      log_level = 4
 ccccccccccccccccccccccccccccccccccccccccccccccccc
 
@@ -203,7 +203,7 @@ cc            print *, 'nrunsk, nsubsk, nbad, nbad0 = ', nrunsk, nsubsk, nbad0, 
 c*** apply lowfit
          if (nqisk.lt.NHITCUT) then
             nevent = nevent + 1
-            call lfallfit_sk4_gain_corr_mc(watert, NHITCUT, 0, log_level, lfflag)
+            call lfallfit_sk4_mc(watert, NHITCUT, 0, log_level, lfflag)
          endif
 
 c         print *,'==============='

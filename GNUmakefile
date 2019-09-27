@@ -18,12 +18,12 @@ LOCAL_LIBS	= -lsollib_4.0 -lsklowe_7.0 -lsollib_4.0 -lwtlib_5.1 -lbonsai_3.3 -ls
 #  Objects
 #
 
-OBJS   =  dsigma vectgen make_random lowfit_sk4_gain_corr_mc incorporate
+OBJS   =  dsigma vectgen make_random lowfit_sk4_mc incorporate
 
 all: $(OBJS)
 	$(RM) *.o *~
 
-dsigma: dsigma.cpp
+dsigma: dsigma.h dsigma.cpp
 	g++ -c dsigma.cpp
 
 vectgen: vectgen.o dsigma.o

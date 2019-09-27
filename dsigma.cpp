@@ -5,6 +5,7 @@
 #include <ctime>
 #include <string>
 #include <map>
+#include "dsigma.h"
 
 using namespace std;
 
@@ -17,10 +18,10 @@ using namespace std;
 /****************************************************************************/
 
 /**Prototypes ***************************************************************/
-double dsigma(double e_nu,double e_e,double costheta);
-float enu(float ee,double costheta);
-void genedir(double emin, double emax, double *ep, double *cth, double *phi);
-double dsigmasv_max(double ep);
+//double dsigma(double e_nu,double e_e,double costheta);
+//float enu(float ee,double costheta);
+//void genedir(double emin, double emax, double *ep, double *cth, double *phi);
+//double dsigmasv_max(double ep);
 //void getspec_(double *emin, double *emax, double *ux, double *uy, double *uz, double *en, double *upx, double *upy, double *upz);
 
 /*************** Constants ***************************************************************/
@@ -89,23 +90,23 @@ double dsigma(double e_nu,double e_e,double costheta)
 /*IBD cross-section (Strumia-Vissani)*************************************************/
 double dsigma_sv(float enu, double costheta){
     double hbarc2 = 0.389379365e-21;
-    double alpha = 1./128;
+    double alpha = 1./137.035999139; // PDG 2018
     double g10 = -1.270;
-    double me = 0.511;
-    double MV2 = 0.71e6;
-    double MA2 = 1.0e6;
-    double mpi = 139.0;
-    double xi = 3.706;
-    double delta = 1.293;
-    double M = 938.9;
+    double me = 0.5109989461; // PDG 2018
+    double MV2 = 710*710;
+    double MA2 = 1030*1030;
+    double mpi = 139.57061; // PDG 2018
+    double xi = (2.7928473446-1) + 1.9130427; // (nu_p - 1) - nu_n from PDG 2018
+    double delta = 939.565413 - 938.272081;
+    double M = 0.5 * (939.565413 + 938.272081);
     double mn = M + delta/2;
     double mp = M - delta/2;
     double Gf = 1.1663787e-11;
-    double cthc = 0.9746;
+    double cthc = 0.97420; // PDG 2018
     double epsilon = enu/mp;
     double delta2 = (pow(mn, 2) - pow(mp, 2) - pow(me, 2))/(2 * mp);
     double kappa = pow(1 + epsilon, 2) - pow(epsilon * costheta, 2);
-    double ee = ((enu - delta2) * (1 + epsilon) + epsilon * costheta * sqrt(pow(enu - delta, 2) - pow(me, 2) * kappa))/kappa;
+    double ee = ((enu - delta2) * (1 + epsilon) + epsilon * costheta * sqrt(pow(enu - delta2, 2) - pow(me, 2) * kappa))/kappa;
     double t = pow(mn, 2) - pow(mp, 2) - 2 * mp * (enu - ee);
     double f1 = (1 - (1 + xi) * t/pow(2 * M, 2))/((1 - t/pow(2 * M, 2)) * pow(1 - t/MV2, 2));
     double f2 = xi/((1 - t/pow(2 * M, 2)) * pow(1 - t/MV2, 2));
@@ -122,8 +123,19 @@ double dsigma_sv(float enu, double costheta){
     double pe = sqrt(pow(ee, 2) - pow(me, 2));
     double fact = pe * epsilon/(1 + epsilon * (1 - ee/pe * costheta));
     double rad = 1 + alpha/pi * (6.0 + 3./2 * log(mp/(2 * ee)) + 1.2 * pow(me/ee, 1.5));
-    double dsigmadee = 2 * mp * hbarc2 * pow(Gf * cthc/smp2, 2)/(2 * pi) * m2 * fact * rad;
+    double dsigmadee = 2 * mp * hbarc2 * pow(Gf * cthc/smp2, 2)/(2 * pi) * m2 * fact ;//* rad;
     return dsigmadee;
+}
+
+double dsigma_sv_enu(float enu){
+    double bw = 0.01;
+    int nbin = (int) floor(2/bw);
+    double res = bw/2 * (dsigma_sv(enu, -1) + dsigma_sv(enu, 1));
+    for(int i = 1; i < nbin; i++){
+        double ctheta = i * 0.01 - 1;
+        res += bw * dsigma_sv(enu, ctheta);
+    }
+    return res;
 }
 
 /*Max IBD cross-section (SV) for random number generation***********/
@@ -157,6 +169,22 @@ float enu(float ee,double costheta)
   double pe=sqrt(ee*ee-me*me);
   
   return((ee+delta+d)/(1-(ee-pe*costheta)/mp));
+}
+
+
+/*Weight function using a spectrum from an histogram*/
+float weight(float enu, float low, float bwidth, double *nuspectrum){
+    int numbin = (int) (floor((enu - low)/bwidth));
+    if (numbin < 0){
+        return 0;
+    }
+    float residual = (enu - bwidth * numbin)/bwidth;
+    float ylow = nuspectrum[numbin];
+    float yup = nuspectrum[numbin + 1];
+    float spec = yup * residual + ylow * (1 - residual);
+    float flux = spec * dsigma_sv_enu(enu);
+    //cout << enu << " " << spec << " " << flux << endl;
+    return flux * spec;
 }
 
 /*Get positron direction and neutrino energy given positron energy and nu direction *******/
