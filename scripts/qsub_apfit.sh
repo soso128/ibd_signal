@@ -5,8 +5,8 @@ ulimit -c 0
 source exec_card.sh
 
 # Create log and error dirs
-logdir=$combine_dir/log
-errdir=$combine_dir/err
+logdir=$apfit_dir/log
+errdir=$apfit_dir/err
 mkdir -p  $logdir
 mkdir -p $errdir
 
@@ -15,8 +15,9 @@ while getopts ":dh" opt
 do
     case $opt in
         h)
-            echo '****************     help for qsub_combine.sh    ****************:'
-            echo 'Usage ./qsub_combine <start run> <end run> <emin> <emax>'
+            echo '****************     help for qsub_skdetsim.sh    ****************:'
+            echo 'Usage ./qsub_apfit <start run> <end run> <emin> <emax>'
+            exit 0
             ;;
     esac
 done
@@ -28,8 +29,8 @@ do
     for r in `seq 1 $repeat`
     do
         inname=$lowfit_dir/$3\_$4
-        infile=$inname/$lowfit_prefix\.r$run\.$r\.mcfit.root
-        # Check if input file exists
+        infile=$inname/$lowfit_prefix\.r$run.$r.mcfit.root
+        # Check if zbs file exists
         if [ ! -f $infile ]
         then
             echo $infile" does not exist"
@@ -43,7 +44,8 @@ do
             jobrunning=`qstat -a $queue | grep $USER | wc -l`
         done
         jobname=$run\_$3\_$4\_$r
-        echo "qsub -q lowe -o $logdir/$jobname.out -e $errdir/$jobname.err -r $jobname ./combine.sh"
-        qsub -q $queue -o $logdir/$jobname.out -e $errdir/$jobname.err -r $jobname ./combine.sh
+        echo "qsub -q $queue -o $logdir/$jobname.out -e $logdir/$jobname.err -r $jobname ./apfit.sh"
+        qsub -q $queue -o $logdir/$jobname.out -e $errdir/$jobname.err -r $jobname ./apfit.sh
     done
-done < ../runs.txt
+done 
+

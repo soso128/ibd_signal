@@ -3,9 +3,10 @@
 # Parse job name to get command line arguments
 args=(${PJM_JOBNAME//_/ })
 run=`echo ${args[0]} | cut -c2-`
-tag=r$run
 emin=${args[1]}
 emax=${args[2]}
+repeat=${args[3]}
+tag=r$run.$repeat
 
 source exec_card.sh
 
@@ -31,14 +32,16 @@ fi
 # Write card
 
 #set random seed
-RAN1=`sh -c 'RANDOM=$0; echo $RANDOM' $1`
-RAN2=`sh -c 'RANDOM=$0; echo $RANDOM' $2`
+RAN1=`./genrand.sh`
+RAN2=`./genrand.sh`
+echo $RAN1" "$RAN2
 
 mkdir -p $card_dir
 CARD=$card_dir/supersim.card.$PJM_JOBNAME
+echo $CARD
 if [ -f $CARD  ]
 then
-    rm $CARD
+   rm $CARD
 fi
 sed -e 's/RAN1/'$RAN1'/; s/RAN2/'$RAN2'/;' ../supersim.card > $CARD
 
@@ -48,11 +51,11 @@ sed -e 's/RAN1/'$RAN1'/; s/RAN2/'$RAN2'/;' ../supersim.card > $CARD
 inputsize=$(wc -c <"$infile")
 if [ "$inputsize" -lt 100 ]
 then
-    echo "Empty input file "$infile
-    exit 1
+   echo "Empty input file "$infile
+   exit 1
 fi
 time $SKDETSIM $CARD $outfile $infile
-# run lowe reconstruction with gain correction
+# run lowe reconstruction without gain correction
 time $lowfit 0 $outfile $outfile2
 
 echo ' Check: '

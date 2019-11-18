@@ -8,15 +8,15 @@ run=`echo ${args[0]} | cut -c2-`
 emin=${args[1]}
 emax=${args[2]}
 repeat=${args[3]}
-seed=`./genrand.sh`
+isp=${args[4]}
 tag=r$run.$repeat
 
 # Inputs (vector files) and outputs
-inname=$lowfit_dir/$emin\_$emax
-infile=$inname/$lowfit_prefix\.$tag\.mcfit.root
-outname=$combine_dir/$emin\_$emax
+inname=$leaf_dir/$emin\_$emax
+infile=$inname/$leaf_prefix\.$tag\.root
+outname=$weight_dir/$emin\_$emax
 mkdir -p $outname
-outfile=$outname/$combine_prefix\.$tag.root
+outfile=$outname/$weight_prefix\.$tag.root
 rm -f $outfile
 
 # Check if input file exists
@@ -26,9 +26,9 @@ then
     exit 1
 fi
 
-# Combine events
-echo "$combine $outfile $infile $run $seed"
-time $combine $outfile $infile $run $seed
+# leaf events
+echo "$reweight $isp $outfile $SPECTRUM $infile"
+time $reweight $isp $outfile $SPECTRUM $infile
 
 echo ' Check: '
 ls -haltr $outfile

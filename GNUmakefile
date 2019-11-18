@@ -12,24 +12,50 @@ include $(SKOFL_ROOT)/config.gmk
 
 LOCAL_INC	= 
 
-LOCAL_LIBS	= -lsollib_4.0 -lsklowe_7.0 -lsollib_4.0 -lwtlib_5.1 -lbonsai_3.3 -lstmu -lska
+LOCAL_LIBS	=   zbsinit.o set_rflistC.o fort_fopen.o \
+		   $(APLIB) $(APLIB) \
+	   	   -lsollib_4.0 -lsklowe_7.0 -lsollib_4.0 -lwtlib_5.1 -lbonsai_3.3 -lstmu -lska \
+		-L/home/iida/relic/lib -lrelic\
+		-L$(NEUT_ROOT)/lib/Linux_pc\
+		-lfccomb -lprotonid -lpolfit -lexpq -lringlib -lseplib -lprtlib -lmuelib -lstmu -lffit -laplowe \
+	        -lodlib  -laplib -lmslib -lmsfit -ltf -lThreeProb -lnumrec -lneutflux -lska -lfiTQun \
+		-lmsfit  -lprtlib  \
+                -lstmu -lapdrlib  \
+                -lConnectionTableReader 
+
+LIBSROOT=-L$(ROOTSYS)/lib/ -lCint -lCore -lRIO -lNet -lHist -lGraf -lGraf3d -lGpad -lTree -lRint -lPostscript -lMatrix -lPhysics -lMathCore -lThread -lGui
+
+INCROOT=-I$(ROOTSYS)/include/
+
+FORTRANINCLUDES = $(SITE_INCLUDES) -I. -I$(SKOFL_FORTRAN_INCDIR) -I$(SKOFL_FORTRAN_INCDIR)/lowe -I$(A_FORTRAN_INCDIR) 
 
 #
 #  Objects
 #
 
-OBJS   =  dsigma vectgen make_random lowfit_sk4_mc incorporate
+OBJS   =  zbsinit.o set_rflistC.o fort_fopen.o dsigma vectgen vectgen_run make_random incorporate lem reweight fortran_interface_skmc.o skmc_manager.o lowfit_sk4_mc.o lowfit_sk4_mc leaf
 
 all: $(OBJS)
-	$(RM) *.o *~
+
+lowfit_sk4_mc: lowfit_sk4_mc.o skmc_manager.o fortran_interface_skmc.o
+	LD_RUN_PATH=$(SKOFL_LIBDIR):$(A_LIBDIR) $(CXX) $(CXXFLAGS) -o lowfit_sk4_mc lowfit_sk4_mc.o skmc_manager.o fortran_interface_skmc.o $(INCROOT) -I$(SKOFL_INCDIR) -L$(SKOFL_LIBDIR) $(LIBSROOT) $(LDLIBS)
+
+lem: lem.cpp init_geom.o
+	g++ -g -O3 -o lem lem.cpp init_geom.o $(INCROOT) -I$(SKOFL_INCDIR) -L$(SKOFL_LIBDIR) $(LIBSROOT) $(LDLIBS)
 
 dsigma: dsigma.h dsigma.cpp
-	g++ -c dsigma.cpp
+	g++ -c -g dsigma.cpp
+
+reweight: reweight.cpp dsigma.o
+	g++ -g -O3 -o reweight reweight.cpp dsigma.o $(INCROOT) -I$(SKOFL_INCDIR) -L$(SKOFL_LIBDIR) $(LIBSROOT) $(LDLIBS)
 
 vectgen: vectgen.o dsigma.o
 	LD_RUN_PATH=$(SKOFL_LIBDIR):$(A_LIBDIR) $(CXX) $(CXXFLAGS) -o vectgen vectgen.o dsigma.o $(LDLIBS) 
 
-incorporate: initialize.o incorporate.o
+vectgen_run: vectgen_run.o dsigma.o
+	LD_RUN_PATH=$(SKOFL_LIBDIR):$(A_LIBDIR) $(CXX) $(CXXFLAGS) -o vectgen_run vectgen_run.o dsigma.o $(LDLIBS) 
+
+incorporate: zbsinit.o set_rflistC.o fort_fopen.o initialize.o incorporate.o
 	LD_RUN_PATH=$(SKOFL_LIBDIR):$(A_LIBDIR) $(CXX) $(CXXFLAGS) -o incorporate incorporate.o initialize.o $(LDLIBS) 
 
 clean: 

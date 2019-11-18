@@ -1,6 +1,6 @@
 **********************************************************************
 *     ----------------------------------------
-      SUBROUTINE spectrum(iflag,idate,itime,pos,seed,emin, emax)
+      SUBROUTINE spectrum(iflag,idate,itime,pos,seed,emin, emax, ranpos)
 *     ----------------------------------------
 *     
 *     ( purpose )
@@ -29,12 +29,14 @@
 
       real pos(3,10),postmp(3)
       real ep, enu, eneutron, mneutron, mproton
+      real ct,phi
       real dirpx, dirpy, dirpz
       integer*4 seed
       integer idate(3),itime(3),neutron,ip(3)
       real dirtmp(3), dir(3,3), pmass,pmomabs(3),pmom(3,10)
       real dwall,tvtx(3)
       character*200 specparamfile
+      integer ranpos
 
       call kzeclr
 
@@ -47,12 +49,19 @@
       ip(1)= -12
       ip(2)= -11
       ip(3)= 2112
-      call rnpos(postmp,dwall)
+c     If position not preset
+      if (ranpos.eq.1) then
+          call rnpos(postmp,dwall)
+      else
+          do j = 1,3
+              postmp(j) = pos(j, 1)
+          enddo
+      endif
       do j = 1,3
           pos(1,j)=postmp(1)
           pos(2,j)=postmp(2)
           pos(3,j)=postmp(3)
-          tvtx(j)=0.0
+          tvtx(j) = 0.
       enddo
       call rndir(dirtmp)
       dir(1,1)=dirtmp(1)
@@ -60,7 +69,10 @@
       dir(3,1)=dirtmp(3)
 c     Use Strumia-Vissani cross-section to get positron direction
 c     and deduce the one for the neutron
-      call getspec(emin, emax,dir(1,1),dir(2,1),dir(3,1),ep,enu,dir(1,2),dir(2,2),dir(3,2))
+      ep=rlu() * (emax - emin) + emin
+      ct = rlu() * 2 - 1
+      phi = rlu() * 2 * 3.1415926
+      call getspec(ep,ct,phi,dir(1,1),dir(2,1),dir(3,1),enu,dir(1,2),dir(2,2),dir(3,2))
       pmomabs(1)=enu
       pmomabs(2)=sqrt(ep*ep-me*me)
       eneutron = enu + mproton - ep

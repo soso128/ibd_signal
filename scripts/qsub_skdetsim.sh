@@ -1,5 +1,7 @@
 #!/bin/bash
 
+ulimit -c 0
+
 source exec_card.sh
 
 # Create log and error dirs
@@ -15,20 +17,34 @@ do
         h)
             echo '****************     help for qsub_skdetsim.sh    ****************:'
             echo 'Usage ./qsub_skdetsim <start run> <end run> <emin> <emax>'
+            exit 0
             ;;
     esac
 done
 
-while read run
+repeat=$5
+
+for run in `seq $1 $2`
 do
-    if [ "$run" -lt $1 ]
-    then
-        continue
-    fi
-    if [ "$run" -gt $2 ]
-    then
-        break
-    fi
-    jobname=$run\_$3\_$4
-    qsub -q $queue -o $logdir/$jobname.out -e $logdir/$jobname.err -r $jobname ./skdetsim.sh
-done < ../runs.txt
+    for r in `seq 1 $repeat`
+    do
+        inname=$vector_dir/$3\_$4
+        infile=$inname/$vector_prefix\.r$run.$r.zbs
+        # Check if zbs file exists
+        if [ ! -f $infile ]
+        then
+            echo $infile" does not exist"
+            continue
+        fi
+        # Job limit
+        jobrunning=`qstat -a $queue | grep $USER | wc -l`
+        echo $jobrunning" jobs running"
+        while [ $jobrunning -gt $maxjobs ]
+        do
+            jobrunning=`qstat -a $queue | grep $USER | wc -l`
+        done
+        jobname=$run\_$3\_$4\_$r
+        echo "qsub -q $queue -o $logdir/$jobname.out -e $logdir/$jobname.err -r $jobname ./skdetsim.sh"
+        qsub -q $queue -o $logdir/$jobname.out -e $errdir/$jobname.err -r $jobname ./skdetsim.sh
+    done
+done

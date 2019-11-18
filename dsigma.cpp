@@ -153,11 +153,12 @@ double dsigmasv_max(double ep){
 /*Draw random positron energy, theta, and phi for given energy bin ********/
 void genedir(double emin, double emax, float *ep, double *cth, double *phi){
     *ep = random()/((double) RAND_MAX) * (emax - emin) + emin;
-    double smax = dsigmasv_max(*ep);
+    //double smax = dsigmasv_max(*ep);
+    //*cth = random()/((double) RAND_MAX) * 2 - 1;
+    //while(dsigma_sv(enu(*ep,*cth), *cth)/smax < random()/((double) RAND_MAX)){
+        //*cth = random()/((double) RAND_MAX) * 2 - 1;
+    //}
     *cth = random()/((double) RAND_MAX) * 2 - 1;
-    while(dsigma_sv(enu(*ep,*cth), *cth)/smax < random()/((double) RAND_MAX)){
-        *cth = random()/((double) RAND_MAX) * 2 - 1;
-    }
     *phi = random()/((double) RAND_MAX) * 2 * pi;
 }
 
@@ -172,26 +173,63 @@ float enu(float ee,double costheta)
 }
 
 
-/*Weight function using a spectrum from an histogram*/
-float weight(float enu, float low, float bwidth, double *nuspectrum){
-    int numbin = (int) (floor((enu - low)/bwidth));
-    if (numbin < 0){
+/*Weight function using an ANTINEUTRINO energy spectrum from a histogram*/
+/*Input flux is assumed to be in cm^-2/s/MeV */
+/*Optional: */
+/*          - livetime: default 2790.1 days (SK-IV) */
+/*          - fiducial volume: 22.5 (in kton) */
+float weight_enu(float en, float ctheta, float low, float bwidth, int nbins, double *nuspectrum, double livetime, double fiducial){
+    int numbin = (int) (floor((en - low)/bwidth));
+    if (numbin < 0 || numbin >= nbins){
         return 0;
     }
-    float residual = (enu - bwidth * numbin)/bwidth;
+    float residual = (en - low - bwidth * numbin)/bwidth;
     float ylow = nuspectrum[numbin];
     float yup = nuspectrum[numbin + 1];
     float spec = yup * residual + ylow * (1 - residual);
-    float flux = spec * dsigma_sv_enu(enu);
-    //cout << enu << " " << spec << " " << flux << endl;
-    return flux * spec;
+    float flux = spec * dsigma_sv(en, ctheta) * PROTONS_PER_KTON * livetime * 3600 * 24 * fiducial;
+    return flux;
+}
+
+/*Weight function using an ANTINEUTRINO energy spectrum from a histogram*/
+/* Input is assumed to be already multiplied by the IBD cross-section*/
+float weight_enu_interacted(float en, float low, float bwidth, int nbins, double *nuspectrum){
+    int numbin = (int) (floor((en - low)/bwidth));
+    if (numbin < 0 || numbin >= nbins){
+        return 0;
+    }
+    float residual = (en - low - bwidth * numbin)/bwidth;
+    float ylow = nuspectrum[numbin];
+    float yup = nuspectrum[numbin + 1];
+    float spec = yup * residual + ylow * (1 - residual);
+    float flux = spec;
+    return flux;
+}
+
+/*Weight function using a POSITRON energy spectrum from a histogram*/
+/*Input spectrum is assumed to be normalized to 1*/
+/*Optional: */
+/*          - rate: default 0.86 evts/kton/day (Linyan's value for 9Li) */
+/*          - livetime: default 2790.1 days (SK-IV) */
+/*          - fiducial volume: 22.5 (in kton) */
+float weight_ep(float ep, float low, float bwidth, int nbins, double *pspectrum, double rate, double livetime, double fiducial){
+    int numbin = (int) (floor((ep - low)/bwidth));
+    if (numbin < 0 || numbin >= nbins){
+        return 0;
+    }
+    float residual = (ep - low - bwidth * numbin)/bwidth;
+    float ylow = pspectrum[numbin];
+    float yup = pspectrum[numbin + 1];
+    float flux = yup * residual + ylow * (1 - residual);
+    return flux * rate * livetime * fiducial;
 }
 
 /*Get positron direction and neutrino energy given positron energy and nu direction *******/
 extern "C"{
-    void getspec_(float *emin, float *emax, float *ux, float *uy, float *uz, float *ep, float *en, float *upx, float *upy, float *upz){
-        double cth, phi;
-        genedir(*emin,*emax,ep,&cth,&phi);
+    void getspec_(float *ep, float *ct, float *ph, float *ux, float *uy, float *uz, float *en, float *upx, float *upy, float *upz){
+        float cth = *ct;
+        float phi = *ph;
+        //genedir(*emin,*emax,ep,&cth,&phi);
         double r[3][3];
         // Rotate neutrino direction by theta
         // Rotation axis is anything orthogonal to nu direction

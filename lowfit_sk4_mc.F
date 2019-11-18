@@ -69,6 +69,13 @@ cccccccccccccccccccccccccccccccccccccccccccccccccc
 c*** mc info for SKROOT files
 #include "vcwork.h"
 #include "vcvrtx.h"
+
+c for neutron
+c#include "/home/elhedri/skdetsim/ncapgam.h"
+c      integer idata(10000), ndata, isegm, isseg
+c      real rdata(10000)
+c      equivalence (idata(1),rdata(1))
+c ----
       integer ivmcp,ivtap,ivabl,ivrbw,ivrpm,ivrys,lux
       integer iseed_ranlux,k1_ranlux,k2_ranlux
       integer iseed_rm48,k1_rm48,k2_rm48,iseed1,iseed2,lux2,iseed,k1,k2
@@ -79,6 +86,9 @@ c*** mc info for SKROOT files
 
       integer elapday
       real rr
+      integer icount
+
+      icount = 0
       
 c*** check arguments
       narg = iargc()
@@ -111,6 +121,11 @@ c*** initilalize skroot files
 
 c*** set SK_GEOMETRY
       SK_GEOMETRY = 4
+
+c for neutron
+c***  skmc tree initialize
+c      call skmc_initialize
+c ----
 
 c*** init.
       call kzinit
@@ -149,6 +164,7 @@ c*** initialize NTUPLE
       IQUEST(10) = 65000
       call HROPEN(96, 'ntuple', fname_nt, 'N', 8000, istat)
       call HBOOKN(1, 'ntuple', ntnum, '//ntuple', 10000, nttag)
+
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c*** main loop 
@@ -200,10 +216,14 @@ cc            print *, 'nrunsk, nsubsk, nbad, nbad0 = ', nrunsk, nsubsk, nbad0, 
             nsub_sav = nsubsk
          endif
 
+c***  neutron tagging after trigger adding to trigger id: 0x1000000
+        idtgsk = idtgsk + 268435456
+
+
 c*** apply lowfit
          if (nqisk.lt.NHITCUT) then
             nevent = nevent + 1
-            call lfallfit_sk4_mc(watert, NHITCUT, 0, log_level, lfflag)
+            call lfallfit_sk4_mc(watert, NHITCUT, lfflag)
          endif
 
 c         print *,'==============='
@@ -237,8 +257,17 @@ c*** store header & TQ info.
 c*** output root file 
          call skroot_fill_tree(lun) ! write to disk
 
+c***  store skmc tree (new tree)
+c      call skmc_set_tree(nevsk, num_cap, ip_cap, med_cap,
+c     &     en_cap, pos_cap, t_cap, num_gam, ip_gam, en_gam, dir_gam)
+
+
          elapday= relapse(nrunsk)
          rr = (bsvertex(1)**2+bsvertex(2)**2)/10000.
+
+c        icount = icount + 1
+
+c        if (icount.gt.20) goto 9999
 
 c***  fill ntuple
          data(1) = nrunsk
@@ -323,6 +352,11 @@ c***  fill ntuple
  1001 continue
 
  9999 continue
+
+c for neutron
+c***  write skmc tree
+c      call skmc_write()
+c ----
 c*** close output file
       call skroot_close(lun)
       call skroot_end
