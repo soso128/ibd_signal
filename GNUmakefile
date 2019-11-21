@@ -33,15 +33,12 @@ FORTRANINCLUDES = $(SITE_INCLUDES) -I. -I$(SKOFL_FORTRAN_INCDIR) -I$(SKOFL_FORTR
 #  Objects
 #
 
-OBJS   =  zbsinit.o set_rflistC.o fort_fopen.o dsigma vectgen vectgen_run make_random incorporate lem reweight fortran_interface_skmc.o skmc_manager.o lowfit_sk4_mc.o lowfit_sk4_mc leaf
+OBJS   =  zbsinit.o set_rflistC.o fort_fopen.o dsigma vectgen vectgen_run make_random incorporate reweight fortran_interface_skmc.o skmc_manager.o lowfit_sk4_mc.o lowfit_sk4_mc leaf
 
 all: $(OBJS)
 
 lowfit_sk4_mc: lowfit_sk4_mc.o skmc_manager.o fortran_interface_skmc.o
 	LD_RUN_PATH=$(SKOFL_LIBDIR):$(A_LIBDIR) $(CXX) $(CXXFLAGS) -o lowfit_sk4_mc lowfit_sk4_mc.o skmc_manager.o fortran_interface_skmc.o $(INCROOT) -I$(SKOFL_INCDIR) -L$(SKOFL_LIBDIR) $(LIBSROOT) $(LDLIBS)
-
-lem: lem.cpp init_geom.o
-	g++ -g -O3 -o lem lem.cpp init_geom.o $(INCROOT) -I$(SKOFL_INCDIR) -L$(SKOFL_LIBDIR) $(LIBSROOT) $(LDLIBS)
 
 dsigma: dsigma.h dsigma.cpp
 	g++ -c -g dsigma.cpp
