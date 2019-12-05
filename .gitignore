@@ -7,6 +7,8 @@ make_random
 incorporate
 lowfit_sk4_gain_corr_mc
 vectgen
+vectgen_run
+lowfit_sk4_mc
 *.qux
 seed/*
 spectrum_input/*
