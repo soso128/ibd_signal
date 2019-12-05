@@ -372,10 +372,6 @@ int main(int argc, char **argv)
             tiskz[i] = tiskz2[index[i]];
             qiskz[i] = qiskz2[index[i]];
             icabiz[i] = icabiz2[index[i]];
-            if (index[i] < lomu_tqi->nhits)
-                is_signal[i] = 1;
-            else
-                is_signal[i] = 0;
         }
         //If a hit is okay, save it in sktqz_ timing bank
         // Set TQI 
@@ -392,6 +388,11 @@ int main(int argc, char **argv)
             if (prevt[icabiz[i]] < tiskz[i]) prevt[icabiz[i]] = tiskz[i];
 
             if (tiskz[i] > maxtime) continue;
+
+            if (index[i] < lomu_tqi->nhits)
+                is_signal[i] = 1;
+            else
+                is_signal[i] = 0;
 
             TQII->T.push_back(tiskz[i]);
             TQII->Q.push_back(qiskz[i]);
